@@ -1,0 +1,197 @@
+use anyhow::Result;
+use dialoguer::Input;
+use std::fs;
+use std::io;
+use std::io::prelude::*;
+
+pub mod filter;
+
+#[derive(PartialEq)]
+enum UserCommands {
+    Nothing,
+    Exit,
+    NewGame,
+}
+
+#[derive(Debug, Copy, Clone)]
+enum GameLength {
+    Five,
+    Six,
+}
+
+#[derive(Debug)]
+struct CurrentGame {
+    game_length: GameLength,
+    playfield: Vec<char>,
+    wrong_letters: Vec<char>,
+}
+
+impl CurrentGame {
+    fn new_game() -> CurrentGame {
+        CurrentGame {
+            game_length: {
+                println!("Is the word length 5 or 6? (Press enter for 5)");
+                let mut user_input = String::new();
+                io::stdin()
+                    .read_line(&mut user_input)
+                    .expect("Should be fine");
+                let user_input = user_input.trim();
+                match user_input {
+                    "6" => GameLength::Six,
+                    _ => GameLength::Five,
+                }
+            },
+            playfield: vec!['-', '-', '-', '-', '-'],
+            wrong_letters: vec![],
+        }
+    }
+}
+
+fn main() -> Result<()> {
+    loop {
+        let code = play_game()?;
+        match code {
+            UserCommands::Nothing => play_game()?,
+            UserCommands::Exit => std::process::exit(0),
+            UserCommands::NewGame => play_game()?,
+        };
+    }
+}
+
+fn play_game() -> Result<UserCommands> {
+    let mut command: UserCommands = UserCommands::Nothing;
+    let mut game = CurrentGame::new_game();
+    let mut possible_words = read_file(game.game_length)?;
+    while possible_words.len() > 1 && command == UserCommands::Nothing {
+        let user_input = new_get_user_input(&game.playfield, "Use CAPITAL letters for letters in correct slot.\nUse lower case letters for letters in the wrong slot. \nLeave the - if the box is empty. \nEnter current playfield");
+        if let Ok(Some(input)) = user_input {
+            game.playfield = input.chars().collect();
+        }
+
+        possible_words = solve(&game, &possible_words);
+        //print_possible_words(&possible_words);
+
+        let user_input = get_user_input(&mut command, "Characters not in word?");
+        if let Ok(Some(input)) = user_input {
+            game.wrong_letters = input.chars().collect();
+        }
+
+        possible_words = solve(&game, &possible_words);
+        print_possible_words(&possible_words);
+
+        let possible_words_without_duplicate_letters =
+            filter::words_without_duplicate_letters(&possible_words);
+        print_possible_words(&possible_words_without_duplicate_letters);
+
+        let possible_words_without_uncommon_letters = filter::words_without_uncommon_letters(
+            &possible_words_without_duplicate_letters,
+            &game.playfield,
+        );
+        print_possible_words(&possible_words_without_uncommon_letters);
+
+        let possible_words_with_common_letters = filter::words_with_common_letters(
+            &possible_words_without_uncommon_letters,
+            &game.playfield,
+        );
+        print_possible_words(&possible_words_with_common_letters);
+
+        if let Ok(Some(input)) = get_user_input(
+            &mut command,
+            "Press 3 to print all possible words. Press 4 for latest filtered. Press enter to skip",
+        ) {
+            if input.trim() == "3" {
+                println!(
+                    "{:?} Word count: {:?}",
+                    &possible_words,
+                    &possible_words.len()
+                );
+            } else if input.trim() == "4" {
+                println!(
+                    "{:?} Word count: {:?}",
+                    &possible_words_with_common_letters,
+                    &possible_words_with_common_letters.len()
+                )
+            }
+        }
+    }
+    Ok(command)
+}
+
+fn new_get_user_input(playfield: &[char], prompt: &str) -> Result<Option<String>> {
+    let input: String = Input::new()
+        .with_prompt(prompt)
+        .with_initial_text(playfield.iter().collect::<String>())
+        .interact()?;
+    Ok(Some(input.trim().to_string()))
+}
+
+fn get_user_input(command: &mut UserCommands, prompt: &str) -> Result<Option<String>> {
+    let mut input = String::new();
+    println!("{prompt}");
+
+    io::stdin().read_line(&mut input)?;
+
+    match input.trim() {
+        "1" => {
+            *command = UserCommands::Exit;
+            Ok(None)
+        }
+        "2" => {
+            *command = UserCommands::NewGame;
+            Ok(None)
+        }
+        "" => Ok(None),
+        _ => Ok(Some(input.trim().to_string())),
+    }
+}
+
+fn solve(game: &CurrentGame, possible_words: &[String]) -> Vec<String> {
+    let mut new_possible_words: Vec<String> = Vec::with_capacity(4096);
+    'nextword: for word in possible_words {
+        // Ignore words without known correct characters in correct slot
+        for (index, letter) in word.chars().enumerate() {
+            if game.playfield[index].is_uppercase()
+                && letter.to_string() != game.playfield[index].to_lowercase().to_string()
+            {
+                continue 'nextword;
+            }
+
+            if (game.playfield[index].is_lowercase()) && !word.contains(game.playfield[index])
+                || letter == game.playfield[index]
+            {
+                continue 'nextword;
+            }
+
+            // Ignore words with letters that is known to not be in the word unless part of a locked match.
+            if game.wrong_letters.iter().any(|&c| c == letter)
+                && letter.to_uppercase().to_string() != game.playfield[index].to_string()
+            {
+                continue 'nextword;
+            }
+        }
+
+        new_possible_words.push(word.to_string());
+    }
+    new_possible_words
+}
+
+fn print_possible_words(possible_words: &[String]) {
+    let possible_words_ammount = possible_words.len();
+    match possible_words_ammount {
+        35.. => println!("Many possible words: {possible_words_ammount}"),
+        0 => (),
+        _ => println!(
+            "{:?} Word count: {:?} \n",
+            possible_words, possible_words_ammount
+        ),
+    }
+}
+
+fn read_file(game_length: GameLength) -> Result<Vec<String>> {
+    let f: fs::File = match game_length {
+        GameLength::Six => fs::File::open("svenska6.txt")?,
+        GameLength::Five => fs::File::open("svenska5.txt")?,
+    };
+    let possible_words: Vec<String> = io::BufReader::new(f).lines().collect::<io::Result<_>>()?;
+    Ok(possible_words)
+}
