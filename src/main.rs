@@ -14,9 +14,10 @@ enum UserCommands {
 }
 
 #[derive(Debug, Copy, Clone)]
+#[repr(u8)]
 enum GameLength {
-    Five,
-    Six,
+    Five = 5,
+    Six = 6,
 }
 
 #[derive(Debug)]
@@ -63,7 +64,7 @@ fn play_game() -> Result<UserCommands> {
     let mut game = CurrentGame::new_game();
     let mut possible_words = read_file(game.game_length)?;
     while possible_words.len() > 1 && command == UserCommands::Nothing {
-        let user_input = new_get_user_input(&game.playfield, "Use CAPITAL letters for letters in correct slot.\nUse lower case letters for letters in the wrong slot. \nLeave the - if the box is empty. \nEnter current playfield");
+        let user_input = new_get_user_input(&game, "Use CAPITAL letters for letters in correct slot.\nUse lower case letters for letters in the wrong slot. \nLeave the - if the box is empty. \nEnter current playfield");
         if let Ok(Some(input)) = user_input {
             game.playfield = input.chars().collect();
         }
@@ -117,10 +118,17 @@ fn play_game() -> Result<UserCommands> {
     Ok(command)
 }
 
-fn new_get_user_input(playfield: &[char], prompt: &str) -> Result<Option<String>> {
+fn new_get_user_input(game: &CurrentGame, prompt: &str) -> Result<Option<String>> {
     let input: String = Input::new()
         .with_prompt(prompt)
-        .with_initial_text(playfield.iter().collect::<String>())
+        .with_initial_text(game.playfield.iter().collect::<String>())
+        .validate_with(|user_input: &String| -> Result<(), &str> {
+            if user_input.len() == game.game_length as usize {
+                Ok(())
+            } else {
+                Err("To few/many letters in playfield")
+            }
+        })
         .interact()?;
     Ok(Some(input.trim().to_string()))
 }
