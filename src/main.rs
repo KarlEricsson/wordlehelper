@@ -21,16 +21,16 @@ enum GameLength {
 }
 
 #[derive(Debug)]
-struct CurrentGame {
-    game_length: GameLength,
+struct Game {
+    length: GameLength,
     playfield: Vec<char>,
     wrong_letters: Vec<char>,
 }
 
-impl CurrentGame {
-    fn new_game() -> CurrentGame {
-        CurrentGame {
-            game_length: {
+impl Game {
+    fn new_game() -> Game {
+        Game {
+            length: {
                 println!("Is the word length 5 or 6? (Press enter for 5)");
                 let mut user_input = String::new();
                 io::stdin()
@@ -61,23 +61,29 @@ fn main() -> Result<()> {
 
 fn play_game() -> Result<UserCommands> {
     let mut command: UserCommands = UserCommands::Nothing;
-    let mut game = CurrentGame::new_game();
-    let mut possible_words = read_file(game.game_length)?;
+    let mut current_game = Game::new_game();
+    let mut possible_words = read_file(current_game.length)?;
     while possible_words.len() > 1 && command == UserCommands::Nothing {
-        let user_input = new_get_user_input(&game, "Use CAPITAL letters for letters in correct slot.\nUse lower case letters for letters in the wrong slot. \nLeave the - if the box is empty. \nEnter current playfield");
+        let user_input = new_get_user_input(
+            &current_game,
+            "Use CAPITAL letters for letters in correct slot.\n\
+        Use lower case letters for letters in the wrong slot.\n\
+        Leave the - if the slot is empty.\n\
+        Enter current playfield",
+        );
         if let Ok(Some(input)) = user_input {
-            game.playfield = input.chars().collect();
+            current_game.playfield = input.chars().collect();
         }
 
-        possible_words = solve(&game, &possible_words);
+        possible_words = solve(&current_game, &possible_words);
         //print_possible_words(&possible_words);
 
         let user_input = get_user_input(&mut command, "Characters not in word?");
         if let Ok(Some(input)) = user_input {
-            game.wrong_letters = input.chars().collect();
+            current_game.wrong_letters = input.chars().collect();
         }
 
-        possible_words = solve(&game, &possible_words);
+        possible_words = solve(&current_game, &possible_words);
         print_possible_words(&possible_words);
 
         let possible_words_without_duplicate_letters =
@@ -86,13 +92,13 @@ fn play_game() -> Result<UserCommands> {
 
         let possible_words_without_uncommon_letters = filter::words_without_uncommon_letters(
             &possible_words_without_duplicate_letters,
-            &game.playfield,
+            &current_game.playfield,
         );
         print_possible_words(&possible_words_without_uncommon_letters);
 
         let possible_words_with_common_letters = filter::words_with_common_letters(
             &possible_words_without_uncommon_letters,
-            &game.playfield,
+            &current_game.playfield,
         );
         print_possible_words(&possible_words_with_common_letters);
 
@@ -118,12 +124,12 @@ fn play_game() -> Result<UserCommands> {
     Ok(command)
 }
 
-fn new_get_user_input(game: &CurrentGame, prompt: &str) -> Result<Option<String>> {
+fn new_get_user_input(game: &Game, prompt: &str) -> Result<Option<String>> {
     let input: String = Input::new()
         .with_prompt(prompt)
         .with_initial_text(game.playfield.iter().collect::<String>())
         .validate_with(|user_input: &String| -> Result<(), &str> {
-            if user_input.len() == game.game_length as usize {
+            if user_input.len() == game.length as usize {
                 Ok(())
             } else {
                 Err("To few/many letters in playfield")
@@ -153,7 +159,7 @@ fn get_user_input(command: &mut UserCommands, prompt: &str) -> Result<Option<Str
     }
 }
 
-fn solve(game: &CurrentGame, possible_words: &[String]) -> Vec<String> {
+fn solve(game: &Game, possible_words: &[String]) -> Vec<String> {
     let mut new_possible_words: Vec<String> = Vec::with_capacity(4096);
     'nextword: for word in possible_words {
         // Ignore words without known correct characters in correct slot
