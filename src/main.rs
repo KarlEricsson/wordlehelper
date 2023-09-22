@@ -1,5 +1,6 @@
 use anyhow::Result;
-use dialoguer::Input;
+use dialoguer::theme::ColorfulTheme;
+use dialoguer::{Input, Select};
 use std::fs;
 use std::io;
 use std::io::prelude::*;
@@ -29,20 +30,24 @@ struct Game {
 
 impl Game {
     fn new_game() -> Game {
+        let length = {
+            let input = Select::with_theme(&ColorfulTheme::default())
+                .with_prompt("Playfield size?")
+                .default(0)
+                .item("Five letters")
+                .item("Six letters")
+                .interact()
+                .unwrap();
+
+            match input {
+                0 => GameLength::Five,
+                1 => GameLength::Six,
+                _ => GameLength::Five,
+            }
+        };
         Game {
-            length: {
-                println!("Is the word length 5 or 6? (Press enter for 5)");
-                let mut user_input = String::new();
-                io::stdin()
-                    .read_line(&mut user_input)
-                    .expect("Should be fine");
-                let user_input = user_input.trim();
-                match user_input {
-                    "6" => GameLength::Six,
-                    _ => GameLength::Five,
-                }
-            },
-            playfield: vec!['-', '-', '-', '-', '-'],
+            length,
+            playfield: vec!['-'; length as usize],
             wrong_letters: vec![],
         }
     }
