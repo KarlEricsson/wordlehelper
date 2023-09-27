@@ -69,13 +69,7 @@ fn play_game() -> Result<UserCommands> {
     let mut current_game = Game::new_game();
     let mut possible_words = read_file(current_game.length)?;
     while possible_words.len() > 1 && command == UserCommands::Nothing {
-        let user_input = new_get_user_input(
-            &current_game,
-            "Use CAPITAL letters for letters in correct slot.\n\
-        Use lower case letters for letters in the wrong slot.\n\
-        Leave the - if the slot is empty.\n\
-        Enter current playfield",
-        );
+        let user_input = get_playfield(&current_game, "Enter current playfield");
         if let Ok(Some(input)) = user_input {
             current_game.playfield = input.chars().collect();
         }
@@ -129,18 +123,25 @@ fn play_game() -> Result<UserCommands> {
     Ok(command)
 }
 
-fn new_get_user_input(game: &Game, prompt: &str) -> Result<Option<String>> {
+fn get_playfield(game: &Game, prompt: &str) -> Result<Option<String>> {
+    println!(
+        "Use CAPITAL letters for letters in correct slot.\n\
+        Use lower case letters for letters in the wrong slot.\n\
+        Leave the - if the slot is empty."
+    );
     let input: String = Input::new()
         .with_prompt(prompt)
+        //.allow_empty(true)
         .with_initial_text(game.playfield.iter().collect::<String>())
         .validate_with(|user_input: &String| -> Result<(), &str> {
-            if user_input.len() == game.length as usize {
+            if user_input.chars().count() == game.length as usize {
                 Ok(())
             } else {
                 Err("To few/many letters in playfield")
             }
         })
-        .interact()?;
+        .interact_text()?;
+
     Ok(Some(input.trim().to_string()))
 }
 
