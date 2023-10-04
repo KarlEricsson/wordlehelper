@@ -198,7 +198,7 @@ fn solve(game: &Game, possible_words: &[String]) -> Vec<String> {
 fn print_possible_words(possible_words: &[String]) {
     let possible_words_ammount = possible_words.len();
     match possible_words_ammount {
-        35.. => println!("Many possible words: {possible_words_ammount}"),
+        35.. => println!("Many ({possible_words_ammount}) possible words. Will not print."),
         0 => (),
         _ => println!(
             "{:?} Word count: {:?} \n",
