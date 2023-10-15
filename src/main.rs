@@ -75,12 +75,13 @@ fn play_game() -> Result<UserCommands> {
         }
 
         possible_words = solve(&current_game, &possible_words);
-        //print_possible_words(&possible_words);
 
-        let user_input = get_user_input(&mut command, "Characters not in word?");
+        let user_input = get_chars_not_in_word(&current_game, "Characters not in word?");
         if let Ok(Some(input)) = user_input {
             current_game.wrong_letters = input.chars().collect();
         }
+
+        clearscreen::clear().expect("Failed to clear screen");
 
         possible_words = solve(&current_game, &possible_words);
         print_possible_words(&possible_words);
@@ -143,6 +144,22 @@ fn get_playfield(game: &Game, prompt: &str) -> Result<Option<String>> {
         .interact_text()?;
 
     Ok(Some(input.trim().to_string()))
+}
+
+fn get_chars_not_in_word(game: &Game, prompt: &str) -> Result<Option<String>> {
+    let input: String = Input::new()
+        .with_prompt(prompt)
+        .allow_empty(true)
+        .with_initial_text(game.wrong_letters.iter().collect::<String>())
+        .interact_text()?;
+
+    let trimmed_input = input.trim().to_lowercase();
+
+    if trimmed_input.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(trimmed_input))
+    }
 }
 
 fn get_user_input(command: &mut UserCommands, prompt: &str) -> Result<Option<String>> {
