@@ -21,8 +21,15 @@ enum GameLength {
     Six = 6,
 }
 
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub enum GameLanguage {
+    Swedish,
+    English,
+}
+
 #[derive(Debug)]
-struct Game {
+pub struct Game {
+    language: GameLanguage,
     length: GameLength,
     playfield: Vec<char>,
     wrong_letters: Vec<char>,
@@ -30,7 +37,24 @@ struct Game {
 
 impl Game {
     fn new_game() -> Game {
-        let length = {
+        let language = {
+            let input = Select::with_theme(&ColorfulTheme::default())
+                .with_prompt("Game language?")
+                .default(0)
+                .item("Swedish")
+                .item("English")
+                .interact()
+                .unwrap();
+
+            match input {
+                0 => GameLanguage::Swedish,
+                1 => GameLanguage::English,
+                _ => GameLanguage::Swedish,
+            }
+        };
+        let length = if language == GameLanguage::English {
+            GameLength::Five
+        } else {
             let input = Select::with_theme(&ColorfulTheme::default())
                 .with_prompt("Playfield size?")
                 .default(0)
@@ -46,6 +70,7 @@ impl Game {
             }
         };
         Game {
+            language,
             length,
             playfield: vec!['-'; length as usize],
             wrong_letters: vec![],
@@ -67,7 +92,7 @@ fn main() -> Result<()> {
 fn play_game() -> Result<UserCommands> {
     let mut command: UserCommands = UserCommands::Nothing;
     let mut current_game = Game::new_game();
-    let mut possible_words = read_file(current_game.length)?;
+    let mut possible_words = read_file(&current_game)?;
     while possible_words.len() > 1 && command == UserCommands::Nothing {
         let user_input = get_playfield(&current_game, "Enter current playfield");
         if let Ok(Some(input)) = user_input {
@@ -92,13 +117,13 @@ fn play_game() -> Result<UserCommands> {
 
         let possible_words_without_uncommon_letters = filter::words_without_uncommon_letters(
             &possible_words_without_duplicate_letters,
-            &current_game.playfield,
+            &current_game,
         );
         print_possible_words(&possible_words_without_uncommon_letters);
 
         let possible_words_with_common_letters = filter::words_with_common_letters(
             &possible_words_without_uncommon_letters,
-            &current_game.playfield,
+            &current_game,
         );
         print_possible_words(&possible_words_with_common_letters);
 
@@ -215,20 +240,28 @@ fn solve(game: &Game, possible_words: &[String]) -> Vec<String> {
 fn print_possible_words(possible_words: &[String]) {
     let possible_words_ammount = possible_words.len();
     match possible_words_ammount {
-        35.. => println!("Many ({possible_words_ammount}) possible words. Will not print."),
+        35.. => println!("To many words to print ({possible_words_ammount})."),
         0 => (),
         _ => println!(
-            "{:?} Word count: {:?} \n",
-            possible_words, possible_words_ammount
+            "{:?} words remaining:\n{:?}\n",
+            possible_words_ammount,
+            possible_words.join(" ")
         ),
     }
 }
 
-fn read_file(game_length: GameLength) -> Result<Vec<String>> {
-    let f: fs::File = match game_length {
-        GameLength::Six => fs::File::open("svenska6.txt")?,
-        GameLength::Five => fs::File::open("svenska5.txt")?,
+fn read_file(game: &Game) -> Result<Vec<String>> {
+    println!("{:?} {:?}", game, game.language);
+    let file: fs::File = if matches!(game.language, GameLanguage::English) {
+        fs::File::open("english5.txt")?
+    } else {
+        match game.length {
+            GameLength::Six => fs::File::open("svenska6.txt")?,
+            GameLength::Five => fs::File::open("svenska5.txt")?,
+        }
     };
-    let possible_words: Vec<String> = io::BufReader::new(f).lines().collect::<io::Result<_>>()?;
+    let possible_words: Vec<String> = io::BufReader::new(file)
+        .lines()
+        .collect::<io::Result<_>>()?;
     Ok(possible_words)
 }
