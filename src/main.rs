@@ -251,7 +251,6 @@ fn print_possible_words(possible_words: &[String]) {
 }
 
 fn read_file(game: &Game) -> Result<Vec<String>> {
-    println!("{:?} {:?}", game, game.language);
     let file: fs::File = if matches!(game.language, GameLanguage::English) {
         fs::File::open("english5.txt")?
     } else {
