@@ -153,7 +153,7 @@ fn get_playfield(game: &Game, prompt: &str) -> Result<Option<String>> {
     println!(
         "Use CAPITAL letters for letters in correct slot.\n\
         Use lower case letters for letters in the wrong slot.\n\
-        Leave the - if the slot is empty."
+        Leave the - or use space if the slot is empty."
     );
     let input: String = Input::new()
         .with_prompt(prompt)
@@ -168,7 +168,7 @@ fn get_playfield(game: &Game, prompt: &str) -> Result<Option<String>> {
         })
         .interact_text()?;
 
-    Ok(Some(input.trim().to_string()))
+    Ok(Some(input.trim_matches('\n').to_string().replace(' ', "-")))
 }
 
 fn get_chars_not_in_word(game: &Game, prompt: &str) -> Result<Option<String>> {
