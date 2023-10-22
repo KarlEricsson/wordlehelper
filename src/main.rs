@@ -224,9 +224,11 @@ fn solve(game: &Game, possible_words: &[String]) -> Vec<String> {
                 continue 'nextword;
             }
 
-            // Ignore words with letters that is known to not be in the word unless part of a locked match.
+            // Ignore words with letters that is known to not be in the word unless part of a locked match,
+            // or if the letter is known to be somewhere in the word but currently in the wrong slot.
             if game.wrong_letters.iter().any(|&c| c == letter)
                 && letter.to_uppercase().to_string() != game.playfield[index].to_string()
+                && !game.playfield.iter().any(|&c| c == letter)
             {
                 continue 'nextword;
             }

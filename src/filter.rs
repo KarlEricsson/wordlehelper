@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::Game;
 
@@ -23,35 +23,36 @@ pub fn words_without_duplicate_letters(possible_words: &[String]) -> Vec<String>
 
 pub fn words_with_common_letters(possible_words: &[String], game: &Game) -> Vec<String> {
     let common_letters: Vec<char> = match game.language {
-        crate::GameLanguage::Swedish => vec!['e', 'a', 'n', 'r', 't', 's'],
-        crate::GameLanguage::English => vec!['e', 't', 'a', 'o', 'i', 'n'],
+        crate::GameLanguage::Swedish => vec!['e', 'a', 'n', 'r', 't', 's', 'i', 'l', 'd'],
+        crate::GameLanguage::English => vec!['e', 't', 'a', 'o', 'i', 'n', 's', 'h', 'l'],
     };
 
-    let mut used_common_letters: Vec<char> = common_letters;
-    used_common_letters.retain(|&f| !game.playfield.contains(&f));
-    let mut words_with_common_letters: Vec<String> = Vec::new();
+    let mut filtered_common_letters: Vec<char> = common_letters;
+    // Don't include letters locked in place)
+    filtered_common_letters.retain(|&f| !game.playfield.contains(&f.to_ascii_uppercase()));
+    let mut words_with_common_letters_map: HashMap<usize, Vec<String>> = HashMap::new();
     for word in possible_words {
-        let hits: Vec<&char> = used_common_letters
+        let hits: Vec<&char> = filtered_common_letters
             .iter()
             .filter(|&c| word.contains(*c))
             .collect();
-        if hits.len() >= 2 {
-            words_with_common_letters.push(word.to_string());
+        if !hits.is_empty() {
+            words_with_common_letters_map
+                .entry(hits.len())
+                .or_insert(Vec::new())
+                .push(word.to_string())
         }
     }
-    if !words_with_common_letters.is_empty() {
-        println!("Keeping only possible words with two or more common letters...");
+
+    let words_with_most_common_letters = words_with_common_letters_map
+        .iter()
+        .max_by_key(|&(key, _)| key)
+        .map(|(_, words)| words.clone());
+    if let Some(words) = words_with_most_common_letters {
+        words
     } else {
-        for word in possible_words {
-            if used_common_letters.iter().any(|&c| word.contains(c)) {
-                words_with_common_letters.push(word.to_string());
-            }
-        }
-        if !words_with_common_letters.is_empty() {
-            println!("Keeping only possible words with one common letter...")
-        }
+        possible_words.to_owned()
     }
-    words_with_common_letters
 }
 
 pub fn words_without_uncommon_letters(possible_words: &[String], game: &Game) -> Vec<String> {
@@ -83,5 +84,18 @@ mod tests {
         let words = vec!["spade".to_string(), "ribba".to_string()];
         let returned = words_without_duplicate_letters(&words);
         assert_eq!(returned, ["spade"]);
+    }
+
+    #[test]
+    fn test_words_with_common_letters() {
+        let game: &Game = &Game {
+            language: crate::GameLanguage::Swedish,
+            length: crate::GameLength::Five,
+            playfield: vec!['a', '-', 'k', '-', '-'],
+            wrong_letters: vec!['g'],
+        };
+        let words = &["aktie".to_string()];
+        let returned = words_with_common_letters(words, game);
+        assert_eq!(returned, ["aktie"])
     }
 }
