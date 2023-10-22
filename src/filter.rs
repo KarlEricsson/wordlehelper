@@ -49,6 +49,7 @@ pub fn words_with_common_letters(possible_words: &[String], game: &Game) -> Vec<
         .max_by_key(|&(key, _)| key)
         .map(|(_, words)| words.clone());
     if let Some(words) = words_with_most_common_letters {
+        println!("Filtering out words with the highest ammount of common letters...");
         words
     } else {
         possible_words.to_owned()

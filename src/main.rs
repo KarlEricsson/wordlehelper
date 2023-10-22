@@ -43,13 +43,13 @@ impl Game {
                 .default(0)
                 .item("Swedish")
                 .item("English")
-                .interact()
-                .unwrap();
+                .interact_opt()
+                .expect("English, Swedish or exit should be only choices.");
 
             match input {
-                0 => GameLanguage::Swedish,
-                1 => GameLanguage::English,
-                _ => GameLanguage::Swedish,
+                Some(0) => GameLanguage::Swedish,
+                Some(1) => GameLanguage::English,
+                _ => std::process::exit(0),
             }
         };
         let length = if language == GameLanguage::English {
@@ -61,12 +61,12 @@ impl Game {
                 .item("Five letters")
                 .item("Six letters")
                 .interact()
-                .unwrap();
+                .expect("Should only be able to select five or six letters.");
 
             match input {
                 0 => GameLength::Five,
                 1 => GameLength::Six,
-                _ => GameLength::Five,
+                _ => unreachable!(),
             }
         };
         Game {
@@ -80,6 +80,7 @@ impl Game {
 
 fn main() -> Result<()> {
     loop {
+        println!("Welcome to Wordlehelper! Press q or <Esc> to quit.");
         let code = play_game()?;
         match code {
             UserCommands::Nothing => play_game()?,
@@ -153,7 +154,7 @@ fn get_playfield(game: &Game, prompt: &str) -> Result<Option<String>> {
     println!(
         "Use CAPITAL letters for letters in correct slot.\n\
         Use lower case letters for letters in the wrong slot.\n\
-        Leave the - or use space if the slot is empty."
+        Leave the - or use space if the slot is empty.\n"
     );
     let input: String = Input::new()
         .with_prompt(prompt)
