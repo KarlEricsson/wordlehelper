@@ -110,40 +110,32 @@ fn play_game() -> Result<UserCommands> {
         clearscreen::clear().expect("Failed to clear screen");
 
         possible_words = solve(&current_game, &possible_words);
-        print_possible_words(&possible_words);
+        print_possible_words(&possible_words, true);
 
         let possible_words_without_duplicate_letters =
             filter::words_without_duplicate_letters(&possible_words);
-        print_possible_words(&possible_words_without_duplicate_letters);
+        print_possible_words(&possible_words_without_duplicate_letters, true);
 
         let possible_words_without_uncommon_letters = filter::words_without_uncommon_letters(
             &possible_words_without_duplicate_letters,
             &current_game,
         );
-        print_possible_words(&possible_words_without_uncommon_letters);
+        print_possible_words(&possible_words_without_uncommon_letters, true);
 
         let possible_words_with_common_letters = filter::words_with_common_letters(
             &possible_words_without_uncommon_letters,
             &current_game,
         );
-        print_possible_words(&possible_words_with_common_letters);
+        print_possible_words(&possible_words_with_common_letters, true);
 
         if let Ok(Some(input)) = get_user_input(
             &mut command,
             "Press 3 to print all possible words. Press 4 for latest filtered. Press enter to skip",
         ) {
             if input.trim() == "3" {
-                println!(
-                    "{:?} Word count: {:?}",
-                    &possible_words,
-                    &possible_words.len()
-                );
+                print_possible_words(&possible_words, false);
             } else if input.trim() == "4" {
-                println!(
-                    "{:?} Word count: {:?}",
-                    &possible_words_with_common_letters,
-                    &possible_words_with_common_letters.len()
-                )
+                print_possible_words(&possible_words_with_common_letters, false);
             }
         }
     }
@@ -240,16 +232,18 @@ fn solve(game: &Game, possible_words: &[String]) -> Vec<String> {
     new_possible_words
 }
 
-fn print_possible_words(possible_words: &[String]) {
-    let possible_words_ammount = possible_words.len();
-    match possible_words_ammount {
-        35.. => println!("To many words to print ({possible_words_ammount})."),
-        0 => (),
-        _ => println!(
-            "{:?} words remaining:\n{:?}\n",
-            possible_words_ammount,
-            possible_words.join(" ")
-        ),
+fn print_possible_words(words: &[String], limit: bool) {
+    let word_count = words.len();
+    if limit && word_count > 30 {
+        println!("To many words to print ({}).", word_count);
+    } else {
+        println!("{} words:", word_count);
+        for chunk in words.chunks(5) {
+            for string in chunk {
+                print!("{}\t\t", string);
+            }
+            println!();
+        }
     }
 }
 
