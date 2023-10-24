@@ -39,7 +39,7 @@ pub fn words_with_common_letters(possible_words: &[String], game: &Game) -> Vec<
         if !hits.is_empty() {
             words_with_common_letters_map
                 .entry(hits.len())
-                .or_insert(Vec::new())
+                .or_default()
                 .push(word.to_string())
         }
     }

@@ -7,13 +7,6 @@ use std::io::prelude::*;
 
 pub mod filter;
 
-#[derive(PartialEq)]
-enum UserCommands {
-    Nothing,
-    Exit,
-    NewGame,
-}
-
 #[derive(Debug, Copy, Clone)]
 #[repr(u8)]
 enum GameLength {
@@ -81,17 +74,11 @@ impl Game {
 fn main() -> Result<()> {
     loop {
         println!("Welcome to Wordlehelper! Press q or <Esc> to quit.");
-        let code = play_game()?;
-        match code {
-            UserCommands::Nothing => play_game()?,
-            UserCommands::Exit => std::process::exit(0),
-            UserCommands::NewGame => play_game()?,
-        };
+        play_game()?;
     }
 }
 
-fn play_game() -> Result<UserCommands> {
-    let mut command: UserCommands = UserCommands::Nothing;
+fn play_game() -> Result<()> {
     let mut current_game = Game::new_game();
     let mut possible_words = read_file(&current_game)?;
 
@@ -101,7 +88,7 @@ fn play_game() -> Result<UserCommands> {
         Leave the - or use space if the slot is empty.\n"
     );
 
-    while possible_words.len() > 1 && command == UserCommands::Nothing {
+    while possible_words.len() > 1 {
         let user_input = get_playfield(&current_game, "Enter current playfield");
         if let Ok(Some(input)) = user_input {
             current_game.playfield = input.chars().collect();
@@ -154,7 +141,6 @@ fn play_game() -> Result<UserCommands> {
                     .report(false)
                     .show_default(false)
                     .wait_for_newline(true)
-                    // .report(false)
                     .interact_opt()
                     .unwrap();
             }
@@ -163,13 +149,12 @@ fn play_game() -> Result<UserCommands> {
         }
         clearscreen::clear().expect("Failed to clear screen");
     }
-    Ok(command)
+    Ok(())
 }
 
 fn get_playfield(game: &Game, prompt: &str) -> Result<Option<String>> {
     let input: String = Input::new()
         .with_prompt(prompt)
-        //.allow_empty(true)
         .with_initial_text(game.playfield.iter().collect::<String>())
         .validate_with(|user_input: &String| -> Result<(), &str> {
             if user_input.chars().count() == game.length as usize {
@@ -196,26 +181,6 @@ fn get_chars_not_in_word(game: &Game, prompt: &str) -> Result<Option<String>> {
         Ok(None)
     } else {
         Ok(Some(trimmed_input))
-    }
-}
-
-fn get_user_input(command: &mut UserCommands, prompt: &str) -> Result<Option<String>> {
-    let mut input = String::new();
-    println!("{prompt}");
-
-    io::stdin().read_line(&mut input)?;
-
-    match input.trim() {
-        "1" => {
-            *command = UserCommands::Exit;
-            Ok(None)
-        }
-        "2" => {
-            *command = UserCommands::NewGame;
-            Ok(None)
-        }
-        "" => Ok(None),
-        _ => Ok(Some(input.trim().to_string())),
     }
 }
 
