@@ -104,17 +104,17 @@ fn play_game() -> Result<()> {
         clearscreen::clear().expect("Failed to clear screen");
 
         possible_words = solve(&current_game, &possible_words);
-        print_possible_words(&possible_words, true);
+        print_words(&possible_words, true);
 
         let possible_words_without_duplicate_letters =
             filter::words_without_duplicate_letters(&possible_words);
-        print_possible_words(&possible_words_without_duplicate_letters, true);
+        print_words(&possible_words_without_duplicate_letters, true);
 
         let possible_words_without_uncommon_letters = filter::words_without_uncommon_letters(
             &possible_words_without_duplicate_letters,
             &current_game,
         );
-        print_possible_words(&possible_words_without_uncommon_letters, true);
+        print_words(&possible_words_without_uncommon_letters, true);
 
         let possible_words_with_common_letters = filter::words_with_common_letters(
             &possible_words_without_uncommon_letters,
@@ -122,7 +122,7 @@ fn play_game() -> Result<()> {
         );
 
         println!("Best current guesses:");
-        print_possible_words(&possible_words_with_common_letters, false);
+        print_words(&possible_words_with_common_letters, false);
 
         let input = Select::with_theme(&ColorfulTheme::default())
             .default(0)
@@ -134,7 +134,7 @@ fn play_game() -> Result<()> {
         match input {
             0 => (),
             1 => {
-                print_possible_words(&possible_words, false);
+                print_words(&possible_words, false);
                 Confirm::new()
                     .with_prompt("Press enter to update playfield")
                     .default(false)
@@ -216,17 +216,26 @@ fn solve(game: &Game, possible_words: &[String]) -> Vec<String> {
     new_possible_words
 }
 
-fn print_possible_words(words: &[String], limit: bool) {
+fn print_words(words: &[String], limit: bool) {
     let word_count = words.len();
+    let chunk_size = match word_count {
+        x if x < 6 => 3,
+        x if x < 20 => 4,
+        x if x < 40 => 5,
+        _ => 6,
+    };
     if limit && word_count > 30 {
         println!("To many words to print ({}).", word_count);
     } else {
         println!("{} words:", word_count);
-        for chunk in words.chunks(5) {
+        for chunk in words.chunks(chunk_size) {
             for string in chunk {
                 print!("{}\t\t", string);
             }
             println!();
+            if word_count < 20 {
+                println!();
+            }
         }
     }
 }
