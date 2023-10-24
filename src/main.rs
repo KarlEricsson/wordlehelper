@@ -1,6 +1,6 @@
 use anyhow::Result;
 use dialoguer::theme::ColorfulTheme;
-use dialoguer::{Input, Select};
+use dialoguer::{Confirm, Input, Select};
 use std::fs;
 use std::io;
 use std::io::prelude::*;
@@ -94,6 +94,13 @@ fn play_game() -> Result<UserCommands> {
     let mut command: UserCommands = UserCommands::Nothing;
     let mut current_game = Game::new_game();
     let mut possible_words = read_file(&current_game)?;
+
+    println!(
+        "Use CAPITAL letters for letters in correct slot.\n\
+        Use lower case letters for letters in the wrong slot.\n\
+        Leave the - or use space if the slot is empty.\n"
+    );
+
     while possible_words.len() > 1 && command == UserCommands::Nothing {
         let user_input = get_playfield(&current_game, "Enter current playfield");
         if let Ok(Some(input)) = user_input {
@@ -126,28 +133,40 @@ fn play_game() -> Result<UserCommands> {
             &possible_words_without_uncommon_letters,
             &current_game,
         );
-        print_possible_words(&possible_words_with_common_letters, true);
 
-        if let Ok(Some(input)) = get_user_input(
-            &mut command,
-            "Press 3 to print all possible words. Press 4 for latest filtered. Press enter to skip",
-        ) {
-            if input.trim() == "3" {
+        println!("Best current guesses:");
+        print_possible_words(&possible_words_with_common_letters, false);
+
+        let input = Select::with_theme(&ColorfulTheme::default())
+            .default(0)
+            .item("Update playfield")
+            .item("Show all possible words")
+            .interact()
+            .expect("Should only be able to select index 0 or 1.");
+
+        match input {
+            0 => (),
+            1 => {
                 print_possible_words(&possible_words, false);
-            } else if input.trim() == "4" {
-                print_possible_words(&possible_words_with_common_letters, false);
+                Confirm::new()
+                    .with_prompt("Press enter to update playfield")
+                    .default(false)
+                    .report(false)
+                    .show_default(false)
+                    .wait_for_newline(true)
+                    // .report(false)
+                    .interact_opt()
+                    .unwrap();
             }
+
+            _ => unreachable!(),
         }
+        clearscreen::clear().expect("Failed to clear screen");
     }
     Ok(command)
 }
 
 fn get_playfield(game: &Game, prompt: &str) -> Result<Option<String>> {
-    println!(
-        "Use CAPITAL letters for letters in correct slot.\n\
-        Use lower case letters for letters in the wrong slot.\n\
-        Leave the - or use space if the slot is empty.\n"
-    );
     let input: String = Input::new()
         .with_prompt(prompt)
         //.allow_empty(true)
