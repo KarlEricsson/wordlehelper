@@ -104,6 +104,7 @@ fn play_game() -> Result<()> {
         clearscreen::clear().expect("Failed to clear screen");
 
         possible_words = solve(&current_game, &possible_words);
+        println!("All possible words:");
         print_words(&possible_words, true);
 
         let possible_words_without_duplicate_letters =
@@ -121,7 +122,7 @@ fn play_game() -> Result<()> {
             &current_game,
         );
 
-        println!("Best current guesses:");
+        println!("\nBest current guesses:");
         print_words(&possible_words_with_common_letters, false);
 
         let input = Select::with_theme(&ColorfulTheme::default())
@@ -135,6 +136,7 @@ fn play_game() -> Result<()> {
             0 => (),
             1 => {
                 print_words(&possible_words, false);
+                // TODO: Make prompt not display [y/n] use another/no library?
                 Confirm::new()
                     .with_prompt("Press enter to update playfield")
                     .default(false)
@@ -227,7 +229,7 @@ fn print_words(words: &[String], limit: bool) {
     if limit && word_count > 30 {
         println!("To many words to print ({}).", word_count);
     } else {
-        println!("{} words:", word_count);
+        println!();
         for chunk in words.chunks(chunk_size) {
             for string in chunk {
                 print!("{}\t\t", string);
