@@ -14,7 +14,7 @@ enum GameLength {
     Six = 6,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub enum GameLanguage {
     Swedish,
     English,
@@ -29,7 +29,7 @@ pub struct Game {
 }
 
 impl Game {
-    fn new_game() -> Game {
+    fn new_game() -> Self {
         let language = {
             let input = Select::with_theme(&ColorfulTheme::default())
                 .with_prompt("Game language?")
@@ -62,7 +62,7 @@ impl Game {
                 _ => unreachable!(),
             }
         };
-        Game {
+        Self {
             language,
             length,
             playfield: vec!['-'; length as usize],

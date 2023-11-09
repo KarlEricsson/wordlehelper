@@ -8,12 +8,12 @@ pub fn words_without_duplicate_letters(possible_words: &[String]) -> Vec<String>
     'word: for word in possible_words {
         wordhash.clear();
         for letter in word.chars() {
-            if let false = wordhash.insert(letter) {
+            if !wordhash.insert(letter) {
                 continue 'word;
             }
         }
 
-        words_without_duplicate_letters.push(word.to_string())
+        words_without_duplicate_letters.push(word.to_string());
     }
     if !words_without_duplicate_letters.is_empty() {
         println!("Filtering out words with duplicate letters...");
@@ -40,20 +40,21 @@ pub fn words_with_common_letters(possible_words: &[String], game: &Game) -> Vec<
             words_with_common_letters_map
                 .entry(hits.len())
                 .or_default()
-                .push(word.to_string())
+                .push(word.to_string());
         }
     }
 
     let words_with_most_common_letters = words_with_common_letters_map
-        .iter()
+        .into_iter()
         .max_by_key(|&(key, _)| key)
-        .map(|(_, words)| words.clone());
-    if let Some(words) = words_with_most_common_letters {
-        println!("Filtering out words with the highest ammount of common letters...");
-        words
-    } else {
-        possible_words.to_owned()
-    }
+        .map(|(_, words)| words);
+    words_with_most_common_letters.map_or_else(
+        || possible_words.into(),
+        |words| {
+            println!("Filtering out words with the highest ammount of common letters...");
+            words
+        },
+    )
 }
 
 pub fn words_without_uncommon_letters(possible_words: &[String], game: &Game) -> Vec<String> {
@@ -97,6 +98,6 @@ mod tests {
         };
         let words = &["aktie".to_string()];
         let returned = words_with_common_letters(words, game);
-        assert_eq!(returned, ["aktie"])
+        assert_eq!(returned, ["aktie"]);
     }
 }
