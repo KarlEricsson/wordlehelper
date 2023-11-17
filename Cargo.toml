@@ -9,3 +9,11 @@ edition = "2021"
 anyhow = "1.0.75"
 clearscreen = "2.0.1"
 dialoguer = "0.11.0"
+
+[lints.clippy]
+pedantic = "warn"
+nursery = "warn"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+must_use_candidate = "allow"
+uninlined_format_args = "allow"
