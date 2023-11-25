@@ -51,7 +51,7 @@ pub fn words_with_common_letters(possible_words: &[String], game: &Game) -> Vec<
     words_with_most_common_letters.map_or_else(
         || possible_words.into(),
         |words| {
-            println!("Filtering out words with the highest ammount of common letters...");
+            println!("Filtering out words with the highest amount of common letters...");
             words
         },
     )
