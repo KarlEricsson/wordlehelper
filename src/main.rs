@@ -1,9 +1,7 @@
+use std::{fs, io, io::prelude::*};
+
 use anyhow::Result;
-use dialoguer::theme::ColorfulTheme;
-use dialoguer::{Confirm, Input, Select};
-use std::fs;
-use std::io;
-use std::io::prelude::*;
+use dialoguer::{theme::ColorfulTheme, Confirm, Input, Select};
 
 pub mod filter;
 
@@ -129,25 +127,27 @@ fn play_game() -> Result<()> {
             .default(0)
             .item("Update playfield")
             .item("Show all possible words")
-            .interact()
+            .interact_opt()
             .expect("Should only be able to select index 0 or 1.");
-
-        match input {
-            0 => (),
-            1 => {
-                print_words(&possible_words, false);
-                // TODO: Make prompt not display [y/n] use another/no library?
-                Confirm::new()
-                    .with_prompt("Press enter to update playfield")
-                    .default(false)
-                    .report(false)
-                    .show_default(false)
-                    .wait_for_newline(true)
-                    .interact_opt()
-                    .unwrap();
+        if let Some(index) = input {
+            match index {
+                0 => (),
+                1 => {
+                    print_words(&possible_words, false);
+                    // TODO: Make prompt not display [y/n] use another/no library?
+                    Confirm::new()
+                        .with_prompt("Press enter to update playfield")
+                        .default(false)
+                        .report(false)
+                        .show_default(false)
+                        .wait_for_newline(true)
+                        .interact_opt()
+                        .unwrap();
+                }
+                _ => unreachable!(),
             }
-
-            _ => unreachable!(),
+        } else {
+            possible_words.clear();
         }
         clearscreen::clear().expect("Failed to clear screen");
     }
