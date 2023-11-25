@@ -10,9 +10,16 @@ anyhow = "1.0.75"
 clearscreen = "2.0.1"
 dialoguer = "0.11.0"
 
+[lints.rust]
+keyword_idents = "warn"
+non_ascii_idents = "warn"
+trivial_numeric_casts = "warn"
+unused_qualifications = "warn"
+unused_tuple_struct_fields = "warn"
 [lints.clippy]
-pedantic = "warn"
+pedantic = { level = "warn", priority = -1 }
 nursery = "warn"
+# cargo = "warn"
 missing_errors_doc = "allow"
 missing_panics_doc = "allow"
 must_use_candidate = "allow"
